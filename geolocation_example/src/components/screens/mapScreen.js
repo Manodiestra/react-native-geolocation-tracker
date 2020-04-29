@@ -91,6 +91,26 @@ export class Map extends React.Component {
       this.setState({
         buttonText: 'FINISH',
       });
+      Geolocation.watchPosition(
+        ({coords}) => {
+          this.setState(state => ({
+            currentPosition: {
+              ...coords,
+              latitudeDelta: 0.0922,
+              longitudeDelta: 0.0421,
+            },
+            coordinates: [
+              ...state.coordinates,
+              {latitude: coords.latitude, longitude: coords.longitude},
+            ],
+          }));
+        },
+        console.log,
+        {
+          enableHighAccuracy: true,
+          distanceFilter: 1,
+        },
+      );
     } else {
       console.log('finish the adventure');
     }
@@ -107,16 +127,12 @@ export class Map extends React.Component {
             latitudeDelta: 0.0922,
             longitudeDelta: 0.0421,
           },
-          coordinates: [
-            ...state.coordinates,
-            {latitude: coords.latitude, longitude: coords.longitude},
-          ],
         }));
       },
       console.log,
       {
         enableHighAccuracy: true,
-        distanceFilter: 0,
+        distanceFilter: 2,
       },
     );
   }
@@ -138,8 +154,7 @@ export class Map extends React.Component {
       <View style={this.styles.wrapper}>
         <MapView
           style={this.styles.map}
-          initialRegion={this.state.currentPosition}
-          onPress={this.onMapPress}>
+          initialRegion={this.state.currentPosition}>
           <Polyline
             coordinates={this.state.coordinates}
             strokeWidth={5}
