@@ -12,12 +12,11 @@
       android:roundIcon="@mipmap/final_project_icon"
       android:allowBackup="false"
       android:theme="@style/splashScreen">
+
       <meta-data
         android:name="com.google.android.geo.API_KEY"
         android:value="AIzaSyDRjax4pEJ8q-D7GS8leF7Mmb3MyfwBKd8"/>
       <uses-library android:name="org.apache.http.legacy" android:required="false"/>
-
-
 
       <activity
         android:name=".MainActivity"
