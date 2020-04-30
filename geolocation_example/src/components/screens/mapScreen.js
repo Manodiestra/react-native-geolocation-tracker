@@ -13,6 +13,8 @@ import MapView, {Marker, Circle, Polyline, Callout} from 'react-native-maps';
 import {connect} from 'react-redux';
 import AsyncStorage from '@react-native-community/async-storage';
 import {PermissionsAndroid} from 'react-native';
+import Icon from 'react-native-vector-icons/FontAwesome';
+import ImagePicker from 'react-native-image-picker';
 
 import {createMarker, getMarkers} from '../../actions/markerActions';
 import store from '../../store/store';
@@ -63,7 +65,10 @@ export class Map extends React.Component {
   state = {
     currentPosition: null,
     coordinates: [],
-    buttonText: 'START',
+    icon: 'play',
+    imagePath: null,
+    advTitle: '',
+    markers: [],
   };
 
   async requestLocationPermission() {
@@ -87,18 +92,13 @@ export class Map extends React.Component {
   }
 
   startButtonPressed = () => {
-    if (this.state.buttonText === 'START') {
+    if (this.state.icon === 'play') {
       this.setState({
-        buttonText: 'FINISH',
+        icon: 'stop',
       });
       Geolocation.watchPosition(
         ({coords}) => {
           this.setState(state => ({
-            currentPosition: {
-              ...coords,
-              latitudeDelta: 0.0922,
-              longitudeDelta: 0.0421,
-            },
             coordinates: [
               ...state.coordinates,
               {latitude: coords.latitude, longitude: coords.longitude},
@@ -108,7 +108,7 @@ export class Map extends React.Component {
         console.log,
         {
           enableHighAccuracy: true,
-          distanceFilter: 1,
+          distanceFilter: 2,
         },
       );
     } else {
@@ -137,12 +137,57 @@ export class Map extends React.Component {
     );
   }
 
+  updateTitle = text => {
+    this.setState({
+      advTitle: text,
+    });
+  };
+
   onMapPress = e => {
     const {coordinate} = e.nativeEvent;
+    console.log(coordinate);
     this.props.createMarker({
       coordinate: coordinate,
       title: 'Marker from redux',
       description: 'This is a marker put in and loaded from the redux store',
+    });
+  };
+
+  chooseImage = () => {
+    const options = {
+      title: 'Pick an image',
+      storageOptions: {
+        skipBackup: true,
+        path: 'images',
+        cameraRoll: true,
+        waitUntilSaved: true,
+      },
+    };
+    ImagePicker.showImagePicker(options, response => {
+      if (response.didCancel) {
+        console.log('User cancelled image picker');
+      } else if (response.error) {
+        console.log('ImagePicker Error: ', response.error);
+      } else {
+        this.setState({
+          imagePath: response.uri,
+        });
+        const coords = {
+          latitude: this.state.currentPosition.latitude,
+          longitude: this.state.currentPosition.longitude,
+        };
+        const marker = {
+          coordinate: coords,
+          title: 'Marker for ' + this.state.advTitle,
+          description:
+            'This is a marker put in and loaded from the redux store in the ' +
+            this.state.advTitle +
+            ' adventure',
+        };
+        this.setState(state => ({
+          markers: [...state.markers, {...marker}],
+        }));
+      }
     });
   };
 
@@ -154,7 +199,8 @@ export class Map extends React.Component {
       <View style={this.styles.wrapper}>
         <MapView
           style={this.styles.map}
-          initialRegion={this.state.currentPosition}>
+          initialRegion={this.state.currentPosition}
+          onPress={this.onMapPress}>
           <Polyline
             coordinates={this.state.coordinates}
             strokeWidth={5}
@@ -173,10 +219,14 @@ export class Map extends React.Component {
                     'https://upload.wikimedia.org/wikipedia/en/thumb/a/a6/Pok%C3%A9mon_Pikachu_art.png/220px-Pok%C3%A9mon_Pikachu_art.png',
                 }}
               />
-              <Button title="Edit" onPress={() => console.log('Hello, world!')} />
+              <Button
+                title="You were here"
+                onPress={() => console.log('Hello, world!')}
+              />
             </Callout>
           </Marker>
-          {this.props.markers.map(marker => (
+          {console.log('state markers', this.state.markers)}
+          {this.state.markers.map(marker => (
             <Marker
               draggable
               onDragEnd={() => console.log('I drag ended')}
@@ -189,17 +239,25 @@ export class Map extends React.Component {
           ))}
         </MapView>
         <View style={[this.styles.flex, this.styles.burronWrapper]}>
-          <Button style={this.styles.button} onPress={this.startButtonPressed}>
-            <Text style={this.styles.centerText}>{this.state.buttonText}</Text>
-          </Button>
+          <Icon
+            onPress={this.startButtonPressed}
+            style={this.styles.button}
+            name={this.state.icon}
+            size={48}
+            color="black"
+          />
           <TextInput
             style={this.styles.adventureTitle}
-            onChangeText={text => onChangeText(text)}
-            value={'Adventure Title'}
+            onChangeText={text => this.updateTitle(text)}
+            value={this.state.advTitle}
           />
-          <Button style={this.styles.button}>
-            <Text style={this.styles.centerText}>TAKE PICTURE</Text>
-          </Button>
+          <Icon
+            onPress={this.chooseImage}
+            style={this.styles.button}
+            name="camera"
+            size={48}
+            color="black"
+          />
         </View>
       </View>
     );
