@@ -16,7 +16,12 @@ import {PermissionsAndroid} from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import ImagePicker from 'react-native-image-picker';
 
-import {createMarker, getMarkers} from '../../actions/markerActions';
+import {
+  createMarker,
+  getMarkers,
+  getAdv,
+  createAdv,
+} from '../../actions/markerActions';
 import store from '../../store/store';
 
 export class Map extends React.Component {
@@ -113,12 +118,18 @@ export class Map extends React.Component {
       );
     } else {
       console.log('finish the adventure');
+      this.props.createAdv({
+        title: this.state.advTitle,
+        markers: this.state.markers,
+        coordinates: this.state.coordinates,
+      });
     }
   };
 
   componentDidMount() {
     this.requestLocationPermission();
     this.props.getMarkers();
+    this.props.getAdv();
     Geolocation.watchPosition(
       ({coords}) => {
         this.setState(state => ({
@@ -135,6 +146,8 @@ export class Map extends React.Component {
         distanceFilter: 2,
       },
     );
+    console.log('Markers', this.props.markers.markers);
+    console.log('Adv', this.props.markers.adventures);
   }
 
   updateTitle = text => {
@@ -145,7 +158,6 @@ export class Map extends React.Component {
 
   onMapPress = e => {
     const {coordinate} = e.nativeEvent;
-    console.log(coordinate);
     this.props.createMarker({
       coordinate: coordinate,
       title: 'Marker from redux',
@@ -183,6 +195,7 @@ export class Map extends React.Component {
             'This is a marker put in and loaded from the redux store in the ' +
             this.state.advTitle +
             ' adventure',
+          uri: response.uri,
         };
         this.setState(state => ({
           markers: [...state.markers, {...marker}],
@@ -225,7 +238,6 @@ export class Map extends React.Component {
               />
             </Callout>
           </Marker>
-          {console.log('state markers', this.state.markers)}
           {this.state.markers.map(marker => (
             <Marker
               draggable
@@ -234,8 +246,17 @@ export class Map extends React.Component {
               key={`${marker.coordinate.longitude}_${
                 marker.coordinate.latitude
               }`}
-              {...marker}
-            />
+              {...marker}>
+              <Callout>
+                {console.log('markerURI', marker.uri)}
+                <Image
+                  style={this.styles.image}
+                  source={{
+                    uri: marker.uri,
+                  }}
+                />
+              </Callout>
+            </Marker>
           ))}
         </MapView>
         <View style={[this.styles.flex, this.styles.burronWrapper]}>
@@ -265,14 +286,18 @@ export class Map extends React.Component {
 }
 
 const mapStateToProps = storeState => {
+  console.log('StoreState', storeState);
   return {
     markers: storeState.markers,
+    adventures: storeState.adventures,
   };
 };
 
 const mapPropsToDispatch = {
   getMarkers,
   createMarker,
+  createAdv,
+  getAdv,
 };
 
 export default connect(
